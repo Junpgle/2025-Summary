@@ -149,7 +149,7 @@
             <span class="text-xl">🚀</span>
             <span class="font-bold">点击开启旅程</span>
         </div>
-        <p class="mt-8 text-gray-500 text-xs">生成属于你们的独家记忆</p>
+        <p class="mt-8 text-gray-500 text-xs">内容已启用本地自动保存</p>
     </div>
 
     <!-- 背景元素 -->
@@ -169,8 +169,11 @@
         <div class="flex items-center justify-between p-4 border-b border-white/10 bg-slate-900">
             <h3 class="text-xl font-art text-yellow-400">📝 内容编辑器</h3>
             <div class="flex gap-2">
+                 <button onclick="resetData()" class="px-3 py-2 bg-red-900/50 text-red-300 border border-red-800 rounded-lg text-xs hover:bg-red-800 hover:text-white transition" title="清空本地缓存并恢复默认">
+                    <i class="fas fa-trash-alt mr-1"></i>重置
+                </button>
                 <button onclick="closeEditor()" class="px-4 py-2 bg-slate-700 rounded-lg text-sm hover:bg-slate-600">取消</button>
-                <button onclick="saveAndPreview()" class="px-4 py-2 bg-yellow-400 text-black font-bold rounded-lg text-sm hover:bg-yellow-300">保存并预览</button>
+                <button onclick="saveAndPreview()" class="px-4 py-2 bg-yellow-400 text-black font-bold rounded-lg text-sm hover:bg-yellow-300 shadow-[0_0_10px_#facc15]">保存并预览</button>
             </div>
         </div>
 
@@ -236,8 +239,10 @@
 
     <script>
         // --- 核心数据 (State) ---
-        // 初始提供模板数据，不再包含具体私人信息
-        let appData = {
+        const STORAGE_KEY = '2025_year_review_data_v1';
+
+        // 默认数据模板
+        const defaultAppData = {
             config: {
                 year: '2025',
                 mainTitle: '超绝活力回顾',
@@ -273,6 +278,9 @@
             ]
         };
 
+        // 当前应用数据（初始化为默认值）
+        let appData = JSON.parse(JSON.stringify(defaultAppData));
+
         // 颜色配置
         const colorThemes = {
             red: { color: 'bg-red-500', gradient: 'from-red-600 to-orange-600' },
@@ -285,6 +293,37 @@
 
         // 临时变量，用于编辑态
         let tempAppData = null;
+
+        // --- 本地存储逻辑 ---
+
+        function saveData() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+                console.log('Data saved to localStorage');
+            } catch (e) {
+                console.error('Failed to save data:', e);
+                alert('存储失败，可能是图片过大导致本地存储空间不足。建议使用图床链接代替Base64图片。');
+            }
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    appData = JSON.parse(saved);
+                    console.log('Data loaded from localStorage');
+                } catch (e) {
+                    console.error('Failed to parse saved data:', e);
+                }
+            }
+        }
+
+        function resetData() {
+            if (confirm('确定要重置所有数据到默认状态吗？这将清空您编辑的所有内容！')) {
+                localStorage.removeItem(STORAGE_KEY);
+                location.reload();
+            }
+        }
 
         // --- 应用逻辑 ---
 
@@ -472,6 +511,7 @@
 
         function saveAndPreview() {
             appData = JSON.parse(JSON.stringify(tempAppData));
+            saveData(); // 保存到本地存储
             renderAll();
             closeEditor();
             fireConfetti();
@@ -670,6 +710,7 @@
         function stopFireworks() { if (fwInterval) { clearInterval(fwInterval); fwInterval = null; } }
 
         document.addEventListener('DOMContentLoaded', () => {
+            loadData(); // 加载本地数据
             initConfetti();
         });
     </script>
