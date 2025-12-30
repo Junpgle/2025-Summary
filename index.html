@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2025 年度超绝活力回顾 - 生成器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Ma+Shan+Zheng&family=Orbitron:wght@700&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 引入 SortableJS 用于拖拽排序 (可选，这里先只做基础增删) -->
+
+    <style>
+        /* --- 基础设置 --- */
+        html, body {
+            height: 100%; margin: 0;
+            font-family: 'ZCOOL KuaiLe', cursive, sans-serif;
+            background-color: #0f172a; color: #fff;
+            overscroll-behavior: none;
+        }
+        body.scroll-locked { overflow: hidden !important; }
+
+        /* 主滚动容器 */
+        #main-scroller {
+            height: 100%; overflow-y: scroll;
+            scroll-snap-type: y mandatory; scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch; opacity: 1;
+        }
+
+        .snap-section {
+            height: 100vh; width: 100%;
+            scroll-snap-align: start; scroll-snap-stop: always;
+            position: relative; overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+
+        /* 字体 */
+        .font-art { font-family: 'Ma Shan Zheng', cursive; }
+        .font-digit { font-family: 'Orbitron', sans-serif; }
+        .font-body { font-family: 'Noto Sans SC', sans-serif; }
+
+        /* 动画背景 */
+        .aurora-bg {
+            position: fixed; inset: 0; z-index: -2;
+            background: linear-gradient(45deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+        }
+        .aurora-blob {
+            position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.6;
+            animation: float 10s infinite ease-in-out alternate;
+        }
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(20px, -30px) scale(1.1); }
+        }
+
+        /* --- 首页/封面 --- */
+        #welcome-screen {
+            position: fixed; inset: 0; background: #000; z-index: 5000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: transform 0.8s cubic-bezier(0.7, 0, 0.3, 1);
+        }
+        .slide-up { transform: translateY(-100%); pointer-events: none; }
+
+        /* 通用组件 */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .gallery-scroll {
+            display: flex; overflow-x: auto; gap: 0; scroll-snap-type: x mandatory;
+            scrollbar-width: none; height: 100%; width: 100%;
+        }
+        .gallery-scroll::-webkit-scrollbar { display: none; }
+        .gallery-item { flex: 0 0 100%; scroll-snap-align: center; position: relative; }
+        .gallery-item img, .gallery-item video { width: 100%; height: 100%; object-fit: cover; }
+
+        .scroll-reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s ease; }
+        .active .scroll-reveal { opacity: 1; transform: translateY(0); }
+        .neon-text { text-shadow: 0 0 10px rgba(255,255,255,0.5), 0 0 20px #d946ef; }
+
+        @keyframes grow-line { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+        .animate-grow-line { animation: grow-line 1.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+        /* --- 编辑器样式 --- */
+        #editor-panel {
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(15, 23, 42, 0.98);
+            backdrop-filter: blur(15px);
+            transform: translateY(100%); transition: transform 0.4s ease-in-out;
+            display: flex; flex-direction: column;
+        }
+        #editor-panel.open { transform: translateY(0); }
+
+        .editor-content {
+            flex: 1; overflow-y: auto; padding: 20px;
+            max-width: 800px; margin: 0 auto; width: 100%;
+        }
+
+        .edit-section {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px; padding: 16px; margin-bottom: 20px;
+        }
+        .form-label { display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 4px; }
+        .form-input, .form-textarea {
+            width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+            color: white; padding: 8px 12px; border-radius: 6px; margin-bottom: 12px;
+            font-family: 'Noto Sans SC', sans-serif; font-size: 0.9rem;
+        }
+        .form-input:focus, .form-textarea:focus { outline: none; border-color: #facc15; }
+
+        /* 浮动编辑按钮 */
+        #fab-edit {
+            position: fixed; bottom: 20px; right: 20px; z-index: 4000;
+            width: 56px; height: 56px; border-radius: 50%;
+            background: linear-gradient(135deg, #facc15, #f59e0b);
+            box-shadow: 0 4px 15px rgba(250, 204, 21, 0.4);
+            display: flex; align-items: center; justify-content: center;
+            color: black; font-size: 1.5rem; cursor: pointer;
+            transition: transform 0.2s, opacity 0.3s;
+        }
+        #fab-edit:active { transform: scale(0.9); }
+        .hidden-fab { opacity: 0; pointer-events: none; }
+
+        .btn-primary {
+            background: #facc15; color: black; font-weight: bold; padding: 10px 20px;
+            border-radius: 8px; border: none; cursor: pointer; width: 100%;
+            transition: all 0.2s;
+        }
+        .btn-danger {
+            background: #ef4444; color: white; font-size: 0.8rem; padding: 4px 8px;
+            border-radius: 4px; cursor: pointer;
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.1); color: white; padding: 8px;
+            border-radius: 6px; border: 1px dashed rgba(255,255,255,0.3);
+            text-align: center; cursor: pointer; font-size: 0.9rem;
+        }
+        .color-dot { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
+        .color-dot.active { border-color: white; transform: scale(1.1); }
+    </style>
+</head>
+<body class="scroll-locked">
+
+    <!-- 欢迎/开始页 -->
+    <div id="welcome-screen">
+        <h1 class="text-6xl md:text-8xl font-digit text-transparent bg-clip-text bg-gradient-to-b from-white to-yellow-500 mb-6">2025</h1>
+        <h2 class="text-2xl md:text-4xl font-art text-white mb-10 tracking-widest">年度回顾生成器</h2>
+        <div class="glass-card px-8 py-4 rounded-full cursor-pointer hover:bg-white/10 transition flex items-center gap-3 animate-pulse" onclick="startApp()">
+            <span class="text-xl">🚀</span>
+            <span class="font-bold">点击开启旅程</span>
+        </div>
+        <p class="mt-8 text-gray-500 text-xs">生成属于你们的独家记忆</p>
+    </div>
+
+    <!-- 背景元素 -->
+    <div class="aurora-bg">
+        <div class="aurora-blob bg-purple-900 w-96 h-96 top-0 left-0"></div>
+        <div class="aurora-blob bg-blue-900 w-96 h-96 bottom-0 right-0" style="animation-delay: -5s"></div>
+    </div>
+    <canvas id="confetti-canvas" class="fixed top-0 left-0 w-full h-full pointer-events-none z-50"></canvas>
+
+    <!-- 悬浮编辑按钮 -->
+    <div id="fab-edit" onclick="openEditor()">
+        <i class="fas fa-pen"></i>
+    </div>
+
+    <!-- 全屏编辑器 -->
+    <div id="editor-panel">
+        <div class="flex items-center justify-between p-4 border-b border-white/10 bg-slate-900">
+            <h3 class="text-xl font-art text-yellow-400">📝 内容编辑器</h3>
+            <div class="flex gap-2">
+                <button onclick="closeEditor()" class="px-4 py-2 bg-slate-700 rounded-lg text-sm hover:bg-slate-600">取消</button>
+                <button onclick="saveAndPreview()" class="px-4 py-2 bg-yellow-400 text-black font-bold rounded-lg text-sm hover:bg-yellow-300">保存并预览</button>
+            </div>
+        </div>
+
+        <div class="editor-content custom-scrollbar" id="editor-forms">
+            <!-- 动态生成的表单内容将放在这里 -->
+        </div>
+    </div>
+
+    <!-- 主展示区域 -->
+    <div id="main-scroller">
+        <!-- 头部 -->
+        <header class="snap-section items-center justify-center text-center px-4 relative">
+            <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-20"></div>
+            <div class="relative z-10 scroll-reveal active">
+                <h2 class="text-xl md:text-3xl font-bold text-cyan-300 tracking-widest mb-2" id="header-subtitle">MEMORIES</h2>
+                <h1 class="text-[5rem] md:text-[10rem] font-black font-digit text-transparent bg-clip-text bg-gradient-to-b from-white to-yellow-500 leading-none drop-shadow-xl" id="header-year">2025</h1>
+                <h3 class="text-3xl md:text-6xl font-art neon-text mt-4" id="header-title">年度超绝活力回顾</h3>
+            </div>
+            <div id="scroll-hint" class="absolute bottom-10 w-full text-center animate-bounce">
+                <p class="text-white/50 text-sm">上滑开启旅程</p>
+                <i class="fas fa-chevron-down mt-2 text-white/50"></i>
+            </div>
+        </header>
+
+        <!-- 目录 -->
+        <section class="snap-section relative z-10 overflow-hidden">
+            <div class="absolute right-[-50px] top-1/2 -translate-y-1/2 text-[20rem] font-black text-white/5 font-digit pointer-events-none select-none leading-none">2025</div>
+            <div class="container mx-auto h-full px-6 py-8 md:py-12 flex flex-col relative z-20">
+                <div class="shrink-0 mb-4 md:mb-8 text-center md:text-left scroll-reveal active">
+                    <h2 class="text-4xl md:text-6xl font-bold font-art text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 neon-text">旅程轨迹</h2>
+                    <p class="text-xs md:text-sm text-gray-400 tracking-[0.3em] uppercase mt-2">Timeline & Memories</p>
+                </div>
+                <div id="timeline-container" class="flex-1 flex flex-col justify-between relative pl-4 md:pl-10"></div>
+                <div class="shrink-0 text-center mt-4 text-xs text-white/30 animate-pulse"><i class="fas fa-chevron-down"></i> 下滑进入第一站</div>
+            </div>
+        </section>
+
+        <!-- 事件列表挂载点 -->
+        <div id="events-wrapper"></div>
+
+        <!-- 过渡页 -->
+        <section class="snap-section items-center justify-center px-6 text-center">
+            <div class="glass-card p-8 md:p-16 rounded-3xl max-w-3xl scroll-reveal">
+                <i class="fas fa-quote-left text-3xl text-yellow-500 mb-6 block"></i>
+                <h2 class="text-2xl md:text-4xl font-art leading-relaxed mb-6" id="transition-title">我们依然在路上<br>热爱生活，热泪盈眶</h2>
+                <div class="mt-8 text-yellow-300 font-bold text-xl animate-pulse">接下来，是属于我们的高光时刻！<br>👇</div>
+            </div>
+        </section>
+
+        <!-- 颁奖列表挂载点 -->
+        <div id="awards-wrapper"></div>
+
+        <!-- 尾页 -->
+        <footer id="footer-section" class="snap-section items-center justify-center text-center relative bg-black">
+            <div class="absolute inset-0 bg-gradient-to-t from-purple-900/50 to-transparent"></div>
+            <div class="z-10 scroll-reveal">
+                <div class="text-6xl mb-6">✨</div>
+                <h2 class="text-4xl md:text-6xl font-art mb-4" id="footer-text">2026 未完待续</h2>
+                <button onclick="fireConfetti()" class="px-8 py-3 bg-yellow-400 text-black font-bold rounded-full hover:scale-110 transition shadow-[0_0_20px_#facc15]">再庆祝一次! 🎉</button>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // --- 核心数据 (State) ---
+        // 初始提供模板数据，不再包含具体私人信息
+        let appData = {
+            config: {
+                year: '2025',
+                mainTitle: '超绝活力回顾',
+                footerText: '2026 未完待续'
+            },
+            events: [
+                {
+                    id: 'evt_demo_1',
+                    date: '2025.01.01',
+                    location: '示例地点',
+                    title: '新的一年开始啦',
+                    desc: '这里是事件的详细描述。点击右下角的编辑按钮，把这里改成你自己的故事吧！可以写写那天发生了什么有趣的事情。',
+                    question: '这是一个互动小问题位置',
+                    gallery: ['https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=1000'],
+                    theme: 'from-blue-900 to-slate-900'
+                }
+            ],
+            friends: [
+                {
+                    id: 'award_demo_1',
+                    name: '好友A',
+                    award: '最佳陪伴奖',
+                    speech: '非常感谢大家的厚爱！',
+                    desc: '总是陪伴在身边',
+                    detail: '不管是开心还是难过，你总是在我身边支持我。',
+                    icon: '🏆',
+                    colorName: 'yellow',
+                    color: 'bg-yellow-500',
+                    gradient: 'from-yellow-500 to-amber-600',
+                    imgSrc: 'https://placehold.co/400x600/333/fff?text=Winner',
+                    fallback: 'https://placehold.co/400x600/333/fff?text=Winner'
+                }
+            ]
+        };
+
+        // 颜色配置
+        const colorThemes = {
+            red: { color: 'bg-red-500', gradient: 'from-red-600 to-orange-600' },
+            blue: { color: 'bg-blue-500', gradient: 'from-blue-600 to-cyan-600' },
+            green: { color: 'bg-green-500', gradient: 'from-green-600 to-emerald-600' },
+            purple: { color: 'bg-purple-500', gradient: 'from-purple-600 to-fuchsia-600' },
+            yellow: { color: 'bg-yellow-500', gradient: 'from-yellow-500 to-amber-600' },
+            cyan: { color: 'bg-cyan-500', gradient: 'from-cyan-600 to-teal-600' }
+        };
+
+        // 临时变量，用于编辑态
+        let tempAppData = null;
+
+        // --- 应用逻辑 ---
+
+        function startApp() {
+            document.getElementById('welcome-screen').classList.add('slide-up');
+            document.body.classList.remove('scroll-locked');
+            renderAll();
+            fireConfetti();
+        }
+
+        // 渲染所有视图
+        function renderAll() {
+            // 更新文本
+            document.getElementById('header-year').innerText = appData.config.year;
+            document.getElementById('header-title').innerText = appData.config.mainTitle;
+            document.getElementById('footer-text').innerText = appData.config.footerText;
+
+            renderTimeline();
+            renderEvents();
+            renderAwards();
+            initScrollObserver();
+        }
+
+        // 渲染时间轴目录
+        function renderTimeline() {
+            const container = document.getElementById('timeline-container');
+            container.innerHTML = `
+                <div class="absolute left-[7px] md:left-[0px] top-2 bottom-2 w-[2px] bg-white/10 rounded-full"></div>
+                <div class="absolute left-[7px] md:left-[0px] top-2 bottom-2 w-[2px] bg-gradient-to-b from-cyan-400 via-purple-500 to-yellow-400 rounded-full origin-top animate-grow-line shadow-[0_0_15px_#a855f7]"></div>
+            `;
+            appData.events.forEach((evt, i) => {
+                const delay = i * 200;
+                container.innerHTML += `
+                    <div class="relative pl-8 md:pl-12 group cursor-pointer scroll-reveal" style="transition-delay: ${delay}ms" onclick="document.getElementById('evt-${evt.id}').scrollIntoView({behavior: 'smooth'})">
+                        <div class="absolute left-[0px] md:left-[-7px] top-1/2 -translate-y-1/2 w-4 h-4 bg-[#0f172a] border-2 border-gray-500 rounded-full z-10 group-hover:border-yellow-400 group-hover:scale-125 transition duration-300 group-hover:bg-yellow-400 shadow-[0_0_0_4px_rgba(15,23,42,1)]"></div>
+                        <div class="flex items-center justify-between p-3 md:p-5 rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/20 hover:backdrop-blur-md transition-all duration-300 transform group-hover:translate-x-2">
+                            <div class="flex items-center gap-3 md:gap-4 shrink-0">
+                                <div class="w-10 h-10 md:w-14 md:h-14 rounded-xl bg-gradient-to-br ${evt.theme} flex items-center justify-center text-lg md:text-2xl shadow-lg shrink-0 text-white"><i class="fas fa-map-marker-alt"></i></div>
+                                <div class="flex flex-col">
+                                    <span class="text-xl md:text-4xl font-black font-digit text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">${evt.date.split('.')[1] || '01'}.${evt.date.split('.')[2] || '01'}</span>
+                                    <span class="text-[10px] md:text-xs text-gray-400 font-mono uppercase tracking-widest">${evt.date} · ${evt.location}</span>
+                                </div>
+                            </div>
+                            <div class="text-right pl-3 flex-1 min-w-0">
+                                <h3 class="text-sm md:text-xl font-bold text-gray-200 font-art break-words leading-tight">${evt.title}</h3>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        // 渲染事件详情页
+        function renderEvents() {
+            const wrapper = document.getElementById('events-wrapper');
+            wrapper.innerHTML = '';
+            appData.events.forEach((evt, i) => {
+                const galleryHtml = evt.gallery.map((src, idx) => `
+                    <div class="gallery-item w-full h-full relative">
+                        <img src="${src}" class="w-full h-full object-cover">
+                    </div>`).join('');
+                const reverseClass = (i % 2 !== 0) ? 'md:flex-row-reverse' : 'md:flex-row';
+                wrapper.innerHTML += `
+                    <section id="evt-${evt.id}" class="snap-section flex flex-col ${reverseClass} relative bg-gradient-to-b ${evt.theme}">
+                        <div class="h-[40vh] md:h-full md:w-1/2 relative bg-black/20 shrink-0">
+                            <div class="gallery-scroll">${galleryHtml}</div>
+                            <div class="absolute bottom-4 right-4 text-xs bg-black/50 px-2 py-1 rounded text-white/80 pointer-events-none">左右滑动查看</div>
+                        </div>
+                        <div class="flex-1 md:h-full md:w-1/2 overflow-y-auto relative p-6 md:p-12 flex flex-col justify-center">
+                            <div class="scroll-reveal">
+                                <div class="inline-flex items-center gap-2 text-yellow-300 font-mono text-xs md:text-sm mb-4 border border-yellow-300/30 px-3 py-1 rounded-full"><i class="far fa-calendar-alt"></i> ${evt.date} <span class="w-[1px] h-3 bg-white/30"></span> <i class="fas fa-map-marker-alt"></i> ${evt.location}</div>
+                                <h2 class="text-3xl md:text-5xl font-art font-bold mb-6 leading-tight text-white drop-shadow-md">${evt.title}</h2>
+                                <p class="text-gray-200 text-sm md:text-lg leading-relaxed font-body mb-6 opacity-90 text-justify">${evt.desc}</p>
+                                <div class="bg-white/10 p-4 rounded-xl border-l-4 border-yellow-400 backdrop-blur-sm"><p class="text-yellow-100 text-sm md:text-base italic"><i class="fas fa-comment-dots mr-2"></i>${evt.question}</p></div>
+                            </div>
+                        </div>
+                    </section>`;
+            });
+        }
+
+        // 渲染颁奖页
+        function renderAwards() {
+            const wrapper = document.getElementById('awards-wrapper');
+            // 标题页
+            wrapper.innerHTML = `
+                <section class="snap-section items-center justify-center text-center bg-black">
+                     <div class="scroll-reveal">
+                        <div class="text-8xl mb-6 animate-bounce">🏆</div>
+                        <h2 class="text-5xl md:text-8xl font-art text-yellow-300 neon-text mb-4">颁奖盛典</h2>
+                        <div class="mt-12 animate-pulse text-sm">下滑揭晓获奖名单</div>
+                     </div>
+                </section>`;
+
+            // 具体奖项
+            appData.friends.forEach((f, i) => {
+                const isVideo = f.imgSrc && f.imgSrc.startsWith('data:video');
+                const mediaTag = isVideo
+                    ? `<video src="${f.imgSrc}" class="w-full h-full object-cover" autoplay loop muted playsinline></video>`
+                    : `<img src="${f.imgSrc}" class="w-full h-full object-cover" onerror="this.src='${f.fallback}'">`;
+
+                wrapper.innerHTML += `
+                    <section class="snap-section relative overflow-hidden bg-gradient-to-br ${f.gradient}" id="award-section-${f.id}">
+                        <div class="absolute -top-20 -right-20 text-[15rem] opacity-10 rotate-12 pointer-events-none select-none">${f.icon}</div>
+                        <div class="h-full w-full flex flex-col md:flex-row items-center justify-center px-4 p-6 md:p-20 relative z-10">
+                            <div class="scroll-reveal w-full max-w-md md:max-w-4xl flex flex-col md:flex-row bg-white/10 backdrop-blur-xl rounded-[2rem] border border-white/20 overflow-hidden shadow-2xl">
+                                <div class="w-full md:w-1/2 h-80 md:h-auto relative">
+                                    ${mediaTag}
+                                    <div class="absolute top-4 left-4 ${f.color} text-white px-3 py-1 rounded-lg text-xs font-bold shadow-lg">WINNER</div>
+                                </div>
+                                <div class="w-full md:w-1/2 p-6 md:p-10 flex flex-col justify-center text-left">
+                                    <div class="flex items-center gap-3 mb-2"><h2 class="text-4xl md:text-5xl font-black font-art">${f.name}</h2><span class="text-3xl animate-bounce">${f.icon}</span></div>
+                                    <h3 class="text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-white mb-6">${f.award}</h3>
+                                    <div class="relative pl-10 mb-6 ml-2">
+                                        <div class="absolute left-0 top-0 h-full w-0.5 bg-white/30"></div>
+                                        <i class="fas fa-quote-right absolute -top-1 left-1 text-white/40 text-xl transform rotate-180"></i>
+                                        <div class="relative"><p class="italic text-gray-200 text-sm md:text-base">"${f.speech}"</p><i class="fas fa-quote-right absolute -bottom-2 -right-2 text-white/40 text-xl"></i></div>
+                                    </div>
+                                    <div class="mt-auto pt-6 border-t border-white/10"><p class="font-bold text-lg mb-1">${f.desc}</p><p class="text-xs md:text-sm text-gray-300 opacity-80">${f.detail}</p></div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>`;
+            });
+
+            // 总览页
+            renderSummary(wrapper);
+
+            // 重新挂载 Observer
+            setTimeout(initScrollObserver, 100);
+        }
+
+        function renderSummary(wrapper) {
+            let gridHtml = '';
+            appData.friends.forEach((f) => {
+                gridHtml += `
+                    <div onclick="document.getElementById('award-section-${f.id}').scrollIntoView({behavior: 'smooth'})" class="summary-card flex flex-col items-center justify-center p-3 rounded-xl bg-white/5 border border-white/10 cursor-pointer hover:bg-white/20 hover:scale-105 transition duration-300">
+                        <div class="w-12 h-12 rounded-full overflow-hidden mb-2 border-2 border-white/20">
+                             <img src="${f.imgSrc || f.fallback}" class="w-full h-full object-cover">
+                        </div>
+                        <div class="text-2xl mb-1">${f.icon}</div>
+                        <div class="text-xs font-bold text-gray-300 truncate w-full text-center">${f.name}</div>
+                        <div class="text-[10px] text-yellow-500/80 truncate w-full text-center">${f.award}</div>
+                    </div>`;
+            });
+            // 添加按钮
+             gridHtml += `
+                <div onclick="openEditor()" class="summary-card flex flex-col items-center justify-center p-3 rounded-xl border-2 border-dashed border-gray-600 cursor-pointer hover:border-yellow-400 hover:text-yellow-400 group transition duration-300 bg-gray-900/50">
+                     <div class="text-3xl text-gray-500 group-hover:text-yellow-400 mb-2 transition"><i class="fas fa-plus"></i></div>
+                     <div class="text-xs font-bold text-gray-400 group-hover:text-yellow-400">添加/编辑</div>
+                </div>
+            `;
+
+            wrapper.innerHTML += `
+                <section class="snap-section bg-[#0b1120] relative flex flex-col items-center justify-start py-12 px-6">
+                     <div class="scroll-reveal w-full max-w-5xl flex flex-col h-full">
+                        <div class="shrink-0 text-center mb-6 md:mb-10">
+                            <h2 class="text-3xl md:text-5xl font-art text-transparent bg-clip-text bg-gradient-to-r from-teal-300 to-blue-500">年度人物总览</h2>
+                            <p class="text-xs text-gray-500 uppercase tracking-widest mt-2">2025 Overview & Archive</p>
+                        </div>
+                        <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar"><div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-6 pb-20">${gridHtml}</div></div>
+                     </div>
+                </section>`;
+        }
+
+        // --- 编辑器逻辑 ---
+
+        function openEditor() {
+            // 深拷贝数据，防止编辑时直接影响视图
+            tempAppData = JSON.parse(JSON.stringify(appData));
+            const editor = document.getElementById('editor-panel');
+            const fab = document.getElementById('fab-edit');
+
+            renderEditorUI();
+
+            editor.classList.add('open');
+            fab.classList.add('hidden-fab');
+            document.body.classList.add('scroll-locked');
+        }
+
+        function closeEditor() {
+            document.getElementById('editor-panel').classList.remove('open');
+            document.getElementById('fab-edit').classList.remove('hidden-fab');
+            document.body.classList.remove('scroll-locked');
+            tempAppData = null;
+        }
+
+        function saveAndPreview() {
+            appData = JSON.parse(JSON.stringify(tempAppData));
+            renderAll();
+            closeEditor();
+            fireConfetti();
+        }
+
+        function renderEditorUI() {
+            const container = document.getElementById('editor-forms');
+            container.innerHTML = '';
+
+            // 1. 全局配置
+            container.innerHTML += `
+                <div class="edit-section">
+                    <h4 class="text-lg font-bold mb-4 text-cyan-300">⚙️ 基础设置</h4>
+                    <label class="form-label">年份显示</label>
+                    <input type="text" class="form-input" value="${tempAppData.config.year}" oninput="tempAppData.config.year = this.value">
+                    <label class="form-label">主标题</label>
+                    <input type="text" class="form-input" value="${tempAppData.config.mainTitle}" oninput="tempAppData.config.mainTitle = this.value">
+                    <label class="form-label">结尾文字</label>
+                    <input type="text" class="form-input" value="${tempAppData.config.footerText}" oninput="tempAppData.config.footerText = this.value">
+                </div>
+            `;
+
+            // 2. 事件编辑
+            let eventsHtml = '';
+            tempAppData.events.forEach((evt, i) => {
+                eventsHtml += `
+                    <div class="bg-black/20 p-4 rounded-lg mb-4 border border-white/5 relative">
+                        <button class="absolute top-2 right-2 btn-danger" onclick="removeTempItem('events', ${i})">删除</button>
+                        <h5 class="font-bold mb-2 text-gray-400">事件 #${i + 1}</h5>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div><label class="form-label">日期</label><input type="text" class="form-input" value="${evt.date}" oninput="updateTempItem('events', ${i}, 'date', this.value)"></div>
+                            <div><label class="form-label">地点</label><input type="text" class="form-input" value="${evt.location}" oninput="updateTempItem('events', ${i}, 'location', this.value)"></div>
+                        </div>
+                        <label class="form-label">标题</label><input type="text" class="form-input" value="${evt.title}" oninput="updateTempItem('events', ${i}, 'title', this.value)">
+                        <label class="form-label">描述</label><textarea class="form-textarea h-20" oninput="updateTempItem('events', ${i}, 'desc', this.value)">${evt.desc}</textarea>
+                        <label class="form-label">互动问题/备注</label><input type="text" class="form-input" value="${evt.question}" oninput="updateTempItem('events', ${i}, 'question', this.value)">
+
+                        <div class="mt-2">
+                            <label class="form-label">图片 (点击上传更换)</label>
+                            <input type="file" id="file-evt-${i}" class="hidden" onchange="handleFileSelect(this, 'events', ${i})">
+                            <div class="btn-secondary" onclick="document.getElementById('file-evt-${i}').click()">
+                                ${evt.gallery[0] ? '已选择图片 (点击更换)' : '+ 上传图片'}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML += `
+                <div class="edit-section">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="text-lg font-bold text-green-400">📅 时间轴事件</h4>
+                        <button class="bg-green-600 px-3 py-1 rounded text-xs" onclick="addTempEvent()">+ 添加</button>
+                    </div>
+                    ${eventsHtml}
+                </div>
+            `;
+
+            // 3. 颁奖编辑
+            let friendsHtml = '';
+            tempAppData.friends.forEach((f, i) => {
+                friendsHtml += `
+                    <div class="bg-black/20 p-4 rounded-lg mb-4 border border-white/5 relative">
+                        <button class="absolute top-2 right-2 btn-danger" onclick="removeTempItem('friends', ${i})">删除</button>
+                        <h5 class="font-bold mb-2 text-gray-400">奖项 #${i + 1}</h5>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div><label class="form-label">姓名</label><input type="text" class="form-input" value="${f.name}" oninput="updateTempItem('friends', ${i}, 'name', this.value)"></div>
+                            <div><label class="form-label">图标(Emoji)</label><input type="text" class="form-input text-center" value="${f.icon}" oninput="updateTempItem('friends', ${i}, 'icon', this.value)"></div>
+                        </div>
+                        <label class="form-label">奖项名称</label><input type="text" class="form-input" value="${f.award}" oninput="updateTempItem('friends', ${i}, 'award', this.value)">
+                        <label class="form-label">获奖感言</label><textarea class="form-textarea h-16" oninput="updateTempItem('friends', ${i}, 'speech', this.value)">${f.speech}</textarea>
+                        <label class="form-label">描述</label><input type="text" class="form-input" value="${f.desc}" oninput="updateTempItem('friends', ${i}, 'desc', this.value)">
+                        <label class="form-label">详细补充</label><input type="text" class="form-input" value="${f.detail}" oninput="updateTempItem('friends', ${i}, 'detail', this.value)">
+
+                        <div class="mb-3">
+                            <label class="form-label">主题色</label>
+                            <div class="flex gap-2">
+                                ${Object.keys(colorThemes).map(c => `
+                                    <div class="color-dot ${colorThemes[c].color} ${f.colorName === c ? 'active' : ''}"
+                                         onclick="updateTempColor(${i}, '${c}')"></div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="mt-2">
+                            <label class="form-label">人物照片/视频</label>
+                            <input type="file" id="file-frd-${i}" class="hidden" onchange="handleFileSelect(this, 'friends', ${i})">
+                            <div class="btn-secondary" onclick="document.getElementById('file-frd-${i}').click()">
+                                ${f.imgSrc ? '已选择媒体 (点击更换)' : '+ 上传媒体'}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML += `
+                <div class="edit-section pb-20">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="text-lg font-bold text-yellow-400">🏆 颁奖名单</h4>
+                        <button class="bg-yellow-600 px-3 py-1 rounded text-xs" onclick="addTempFriend()">+ 添加</button>
+                    </div>
+                    ${friendsHtml}
+                </div>
+            `;
+        }
+
+        // --- 编辑器 辅助函数 ---
+
+        function updateTempItem(type, idx, key, val) {
+            tempAppData[type][idx][key] = val;
+        }
+
+        function updateTempColor(idx, colorKey) {
+            tempAppData.friends[idx].colorName = colorKey;
+            tempAppData.friends[idx].color = colorThemes[colorKey].color;
+            tempAppData.friends[idx].gradient = colorThemes[colorKey].gradient;
+            renderEditorUI(); // 重新渲染以更新选中状态
+        }
+
+        function removeTempItem(type, idx) {
+            if(confirm('确定要删除这项内容吗？')) {
+                tempAppData[type].splice(idx, 1);
+                renderEditorUI();
+            }
+        }
+
+        function addTempEvent() {
+            const newId = 'evt_' + Date.now();
+            tempAppData.events.push({
+                id: newId, date: '2025.xx.xx', location: '新地点', title: '新事件标题', desc: '在这里输入描述...',
+                question: '备注...', gallery: ['https://placehold.co/600x400/222/fff?text=Photo'], theme: 'from-purple-900 to-indigo-900'
+            });
+            renderEditorUI();
+        }
+
+        function addTempFriend() {
+            const newId = 'award_' + Date.now();
+            tempAppData.friends.push({
+                id: newId, name: '姓名', award: '奖项名称', speech: '感言...', desc: '描述...', detail: '详情...', icon: '🌟',
+                colorName: 'purple', color: 'bg-purple-500', gradient: 'from-purple-600 to-fuchsia-600',
+                imgSrc: 'https://placehold.co/400x600/333/fff?text=Photo', fallback: ''
+            });
+            renderEditorUI();
+        }
+
+        function handleFileSelect(input, type, idx) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    if (type === 'events') {
+                        tempAppData.events[idx].gallery[0] = e.target.result;
+                    } else {
+                        tempAppData.friends[idx].imgSrc = e.target.result;
+                    }
+                    renderEditorUI(); // 刷新显示状态
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // --- 视觉特效 & 观察器 ---
+        function initScrollObserver() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if(entry.isIntersecting) {
+                        entry.target.classList.add('active');
+                        if(entry.target.querySelector('#timeline-container')) {
+                             setTimeout(() => {
+                                document.querySelectorAll('.animate-grow-line').forEach(el => el.style.transform = 'scaleY(1)');
+                            }, 300);
+                        }
+                        if (entry.target.id === 'footer-section') startFireworks();
+                    } else {
+                        if (entry.target.id === 'footer-section') stopFireworks();
+                    }
+                });
+            }, { threshold: 0.15, root: document.getElementById('main-scroller') });
+            document.querySelectorAll('.snap-section').forEach(el => observer.observe(el));
+        }
+
+        function initConfetti() {
+            const c = document.getElementById('confetti-canvas');
+            c.width = window.innerWidth; c.height = window.innerHeight;
+            myConfetti = confetti.create(c, { resize: true });
+        }
+        let myConfetti;
+        let fwInterval;
+        function fireConfetti() { if(myConfetti) myConfetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } }); }
+
+        function startFireworks() {
+            if (fwInterval) return;
+            fireBurst(); fwInterval = setInterval(fireBurst, 1500);
+        }
+        function fireBurst() {
+            const randomInRange = (min, max) => Math.random() * (max - min) + min;
+            confetti({ particleCount: 80, spread: 360, startVelocity: 30, origin: { x: randomInRange(0.2, 0.8), y: randomInRange(0.2, 0.5) }, colors: ['#FFD700', '#FF69B4', '#00FFFF', '#FF4500'], zIndex: 100 });
+        }
+        function stopFireworks() { if (fwInterval) { clearInterval(fwInterval); fwInterval = null; } }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initConfetti();
+        });
+    </script>
+</body>
+</html>
