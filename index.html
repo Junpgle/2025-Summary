@@ -154,6 +154,16 @@
         #editor-back-to-top.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
         #editor-back-to-top:hover { background: #facc15; color: black; }
 
+        /* 全屏切换按钮（常驻右上角） */
+        #fullscreen-toggle {
+            position: fixed; top: 20px; right: 20px; z-index: 4500;
+            width: 40px; height: 40px; border-radius: 50%;
+            background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+            color: white; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.2s; backdrop-filter: blur(5px);
+        }
+        #fullscreen-toggle:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); }
+
         .btn-primary {
             background: #facc15; color: black; font-weight: bold; padding: 10px 20px;
             border-radius: 8px; border: none; cursor: pointer; width: 100%;
@@ -223,6 +233,11 @@
 </head>
 <body class="scroll-locked">
 
+    <!-- 常驻全屏切换按钮 -->
+    <div id="fullscreen-toggle" onclick="toggleFullScreen()" title="全屏模式">
+        <i class="fas fa-expand"></i>
+    </div>
+
     <!-- 公告弹窗 -->
     <div id="announcement-modal" class="modal-overlay">
         <div class="modal-box">
@@ -279,10 +294,15 @@
             <span class="font-bold">点击开启旅程</span>
         </div>
 
-        <!-- 介绍页跳转按钮 (硬编码链接) -->
-        <a href="./about.html" target="_blank" class="mt-6 px-5 py-2 rounded-full border border-white/20 text-white/60 text-xs cursor-pointer hover:bg-white/10 hover:text-white transition flex items-center gap-2">
-            <i class="fas fa-external-link-alt"></i> <span>关于此生成器</span>
-        </a>
+        <!-- 按钮组 -->
+        <div class="flex gap-4 mt-6">
+             <a href="./about.html" target="_blank" class="px-5 py-2 rounded-full border border-white/20 text-white/60 text-xs cursor-pointer hover:bg-white/10 hover:text-white transition flex items-center gap-2">
+                <i class="fas fa-external-link-alt"></i> <span>关于此生成器</span>
+            </a>
+            <button onclick="toggleFullScreen()" class="px-5 py-2 rounded-full border border-white/20 text-white/60 text-xs cursor-pointer hover:bg-white/10 hover:text-white transition flex items-center gap-2">
+                <i class="fas fa-expand"></i> <span>全屏模式</span>
+            </button>
+        </div>
 
         <p class="mt-8 text-gray-500 text-xs">内容已启用本地自动保存</p>
     </div>
@@ -459,6 +479,19 @@
 
         // 临时变量，用于编辑态
         let tempAppData = null;
+
+        // --- 全屏切换逻辑 ---
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    alert(`无法进入全屏: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
 
         // --- 压缩工具函数 (保留用于存储管理的二次压缩) ---
 
@@ -1244,8 +1277,17 @@
                 const isLocal = hasMedia && hasMedia.startsWith('data:');
                 const mediaStatus = hasMedia ? (isLocal ? '已缓存文件' : '网络链接') : '';
 
+                // 查找当前配色的 key
+                let currentThemeKey = 'blue'; // 默认
+                for (const [key, value] of Object.entries(eventThemes)) {
+                    if (value === evt.theme) {
+                        currentThemeKey = key;
+                        break;
+                    }
+                }
+
                 eventsHtml += `
-                    <div id="edit-event-${i}" class="bg-black/20 p-4 rounded-lg mb-4 border border-white/5 relative">
+                    <div id="edit-event-${i}" class="bg-black/20 p-4 rounded-lg mb-4 border border-white/5 relative transition-all duration-300 hover:bg-black/30">
                         <div class="absolute top-2 right-2 flex gap-2">
                             <button class="btn-icon" onclick="moveTempItem('events', ${i}, -1)" title="上移"><i class="fas fa-arrow-up"></i></button>
                             <button class="btn-icon" onclick="moveTempItem('events', ${i}, 1)" title="下移"><i class="fas fa-arrow-down"></i></button>
@@ -1259,6 +1301,16 @@
                         <label class="form-label">标题</label><input type="text" class="form-input" value="${evt.title}" oninput="updateTempItem('events', ${i}, 'title', this.value)">
                         <label class="form-label">描述</label><textarea class="form-textarea h-20" oninput="updateTempItem('events', ${i}, 'desc', this.value)">${evt.desc}</textarea>
                         <label class="form-label">互动问题/备注</label><input type="text" class="form-input" value="${evt.question}" oninput="updateTempItem('events', ${i}, 'question', this.value)">
+
+                        <div class="mb-3">
+                            <label class="form-label">页面主题色 (点击切换)</label>
+                            <div class="flex gap-2">
+                                ${Object.keys(colorThemes).map(c => `
+                                    <div class="color-dot ${colorThemes[c].color} ${currentThemeKey === c ? 'active' : ''}"
+                                         onclick="updateTempEventTheme(${i}, '${c}')"></div>
+                                `).join('')}
+                            </div>
+                        </div>
 
                         <div class="mt-2">
                             <label class="form-label">图片/视频</label>
@@ -1297,7 +1349,7 @@
                 const mediaStatus = hasMedia ? (isLocal ? '已缓存文件' : '网络链接') : '';
 
                 friendsHtml += `
-                    <div id="edit-friend-${i}" class="bg-black/20 p-4 rounded-lg mb-4 border border-white/5 relative">
+                    <div id="edit-friend-${i}" class="bg-black/20 p-4 rounded-lg mb-4 border border-white/5 relative transition-all duration-300 hover:bg-black/30">
                         <div class="absolute top-2 right-2 flex gap-2">
                             <button class="btn-icon" onclick="moveTempItem('friends', ${i}, -1)" title="上移"><i class="fas fa-arrow-up"></i></button>
                             <button class="btn-icon" onclick="moveTempItem('friends', ${i}, 1)" title="下移"><i class="fas fa-arrow-down"></i></button>
@@ -1361,6 +1413,12 @@
             tempAppData.friends[idx].colorName = colorKey;
             tempAppData.friends[idx].color = colorThemes[colorKey].color;
             tempAppData.friends[idx].gradient = colorThemes[colorKey].gradient;
+            renderEditorUI();
+        }
+
+        // 新增：手动更新事件配色
+        function updateTempEventTheme(idx, colorKey) {
+            tempAppData.events[idx].theme = eventThemes[colorKey];
             renderEditorUI();
         }
 
