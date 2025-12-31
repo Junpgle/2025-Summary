@@ -278,6 +278,12 @@
             <span class="text-xl">🚀</span>
             <span class="font-bold">点击开启旅程</span>
         </div>
+
+        <!-- 介绍页跳转按钮 (硬编码链接) -->
+        <a href="./about.html" target="_blank" class="mt-6 px-5 py-2 rounded-full border border-white/20 text-white/60 text-xs cursor-pointer hover:bg-white/10 hover:text-white transition flex items-center gap-2">
+            <i class="fas fa-external-link-alt"></i> <span>关于此生成器</span>
+        </a>
+
         <p class="mt-8 text-gray-500 text-xs">内容已启用本地自动保存</p>
     </div>
 
@@ -396,6 +402,7 @@
                 mainTitle: '超绝活力回顾',
                 footerText: '2026 未完待续',
                 coverImage: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=2070&auto=format&fit=crop'
+                // 移除了 introText 和 introUrl
             },
             events: [
                 {
@@ -1219,7 +1226,7 @@
                             <span class="text-xs">预览</span>
                          </div>
                     </div>
-                    <div class="flex gap-2">
+                    <div class="flex gap-2 mb-4">
                         <div class="btn-secondary flex-1" onclick="document.getElementById('cover-file-input').click()">
                             <i class="fas fa-upload mr-1"></i> 上传
                         </div>

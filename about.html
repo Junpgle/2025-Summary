@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>关于 - 2025 年度回顾生成器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Orbitron:wght@700&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #0f172a; color: white; font-family: 'Noto Sans SC', sans-serif;
+            min-height: 100vh; display: flex; flex-direction: column;
+        }
+        .font-art { font-family: 'ZCOOL KuaiLe', cursive; }
+        .font-digit { font-family: 'Orbitron', sans-serif; }
+
+        .aurora-bg {
+            position: fixed; inset: 0; z-index: -1;
+            background: radial-gradient(circle at 50% 50%, #1e1b4b 0%, #0f172a 100%);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+        .neon-text { text-shadow: 0 0 10px rgba(250, 204, 21, 0.5); }
+    </style>
+</head>
+<body class="p-6">
+
+    <div class="aurora-bg"></div>
+
+    <div class="max-w-2xl mx-auto w-full mt-10 mb-20 animate-fade-in-up">
+        <!-- 头部 -->
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-6xl font-digit text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500 mb-2">PROJECT 2025</h1>
+            <h2 class="text-xl md:text-2xl font-art text-gray-400">年度超绝活力回顾 · 生成器</h2>
+        </header>
+
+        <!-- 内容卡片 -->
+        <div class="glass-card rounded-3xl p-8 md:p-12 space-y-8">
+
+            <section>
+                <h3 class="text-xl font-bold text-yellow-300 mb-3"><i class="fas fa-rocket mr-2"></i>这是什么？</h3>
+                <p class="text-gray-300 leading-relaxed">
+                    这是一个完全运行在浏览器端的<strong>静态网页生成器</strong>。它不需要后台服务器，不上传你的隐私数据，所有的图片和文字都只保存在你的本地浏览器缓存（LocalStorage）中。
+                </p>
+            </section>
+
+            <section>
+                <h3 class="text-xl font-bold text-blue-300 mb-3"><i class="fas fa-magic mr-2"></i>它能做什么？</h3>
+                <ul class="list-disc list-inside text-gray-300 space-y-2 marker:text-blue-500">
+                    <li>生成炫酷的 2025 年度回忆时间轴。</li>
+                    <li>颁发有趣的年度奖项给你的朋友们。</li>
+                    <li>支持导出 JSON 数据备份，方便分享或迁移。</li>
+                    <li>支持将生成的网页直接截图或录屏分享。</li>
+                </ul>
+            </section>
+
+            <section>
+                <h3 class="text-xl font-bold text-pink-300 mb-3"><i class="fas fa-code mr-2"></i>技术细节</h3>
+                <p class="text-gray-300 text-sm">
+                    构建于 HTML5, Tailwind CSS, Canvas Confetti 和 Cropper.js。<br>
+                    开源且免费，你可以随意修改代码部署属于你的版本。
+                </p>
+            </section>
+
+            <!-- 返回按钮 -->
+            <div class="pt-8 text-center border-t border-white/10">
+                <a href="./index.html" class="inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold rounded-full transition transform hover:scale-105 shadow-lg">
+                    <i class="fas fa-arrow-left mr-2"></i> 返回生成器
+                </a>
+            </div>
+
+        </div>
+
+        <footer class="text-center text-gray-600 text-xs mt-12 font-mono">
+            DESIGNED WITH ❤️ FOR 2025
+        </footer>
+    </div>
+
+</body>
+</html>
