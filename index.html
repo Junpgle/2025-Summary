@@ -8,7 +8,10 @@
     <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Ma+Shan+Zheng&family=Orbitron:wght@700&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- 引入 SortableJS 用于拖拽排序 (可选，这里先只做基础增删) -->
+
+    <!-- 引入 Cropper.js 用于图片裁剪 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 
     <style>
         /* --- 基础设置 --- */
@@ -146,7 +149,7 @@
         .color-dot { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
         .color-dot.active { border-color: white; transform: scale(1.1); }
 
-        /* 公告与存储弹窗样式 */
+        /* 模态框通用样式 */
         .modal-overlay {
             position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10000;
             display: flex; align-items: center; justify-content: center; padding: 20px;
@@ -173,6 +176,15 @@
         .storage-size { font-size: 0.7rem; color: #94a3b8; }
         .storage-size.warn { color: #facc15; }
         .storage-size.danger { color: #ef4444; }
+
+        /* 裁剪器弹窗特定样式 */
+        #cropper-modal { z-index: 10001; } /* 确保在编辑器之上 */
+        #cropper-modal .modal-box {
+            max-width: 800px; height: 80vh; padding: 0; background: #000; border: 1px solid #333; overflow: hidden;
+        }
+        .cropper-area { flex: 1; position: relative; background-color: #000; overflow: hidden; }
+        .cropper-toolbar { padding: 15px; background: #1e293b; display: flex; justify-content: space-between; align-items: center; }
+        #cropper-img { max-width: 100%; display: block; }
     </style>
 </head>
 <body class="scroll-locked">
@@ -206,6 +218,20 @@
             </div>
             <div id="storage-list" class="storage-list custom-scrollbar">
                 <!-- 列表动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 裁剪器弹窗 (新增) -->
+    <div id="cropper-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="cropper-area">
+                <img id="cropper-img" src="">
+            </div>
+            <div class="cropper-toolbar">
+                <button onclick="closeCropper()" class="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded text-sm">取消</button>
+                <div class="text-xs text-gray-400">支持缩放与移动</div>
+                <button onclick="confirmCrop()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm font-bold shadow-lg">确认裁剪并压缩</button>
             </div>
         </div>
     </div>
@@ -366,7 +392,7 @@
         // 临时变量，用于编辑态
         let tempAppData = null;
 
-        // --- 压缩工具函数 ---
+        // --- 压缩工具函数 (保留用于存储管理的二次压缩) ---
 
         // 压缩 File 对象或 Base64 字符串
         function compressImage(source, maxWidth = 800, quality = 0.7) {
@@ -402,6 +428,71 @@
                     img.src = source;
                 }
             });
+        }
+
+        // --- Cropper 裁剪逻辑 ---
+        let currentCropper = null;
+        let uploadContext = { type: null, index: null };
+
+        function openCropper(imageSrc, type, idx) {
+            uploadContext = { type, index: idx };
+            const modal = document.getElementById('cropper-modal');
+            const imgElement = document.getElementById('cropper-img');
+
+            imgElement.src = imageSrc;
+            modal.classList.add('show');
+
+            // 销毁旧实例
+            if (currentCropper) {
+                currentCropper.destroy();
+            }
+
+            // 初始化 Cropper
+            // 稍微延迟确保图片加载
+            setTimeout(() => {
+                currentCropper = new Cropper(imgElement, {
+                    aspectRatio: NaN, // 自由比例
+                    viewMode: 1, // 限制在容器内
+                    autoCropArea: 1, // 默认充满
+                    background: false,
+                });
+            }, 100);
+        }
+
+        function closeCropper() {
+            document.getElementById('cropper-modal').classList.remove('show');
+            if (currentCropper) {
+                currentCropper.destroy();
+                currentCropper = null;
+            }
+            document.getElementById('cropper-img').src = '';
+        }
+
+        function confirmCrop() {
+            if (!currentCropper) return;
+
+            // 获取裁剪后的 Canvas，并限制尺寸（等同于压缩逻辑）
+            const canvas = currentCropper.getCroppedCanvas({
+                maxWidth: 800,
+                maxHeight: 800,
+                fillColor: '#fff',
+            });
+
+            if(!canvas) return;
+
+            // 转换为 Base64，质量 0.7
+            const base64 = canvas.toDataURL('image/jpeg', 0.7);
+
+            // 更新数据
+            if (uploadContext.type === 'events') {
+                tempAppData.events[uploadContext.index].gallery[0] = base64;
+            } else {
+                tempAppData.friends[uploadContext.index].imgSrc = base64;
+            }
+
+            // 刷新编辑器显示
+            renderEditorUI();
+            closeCropper();
         }
 
         // --- 本地存储逻辑 ---
@@ -946,13 +1037,13 @@
             if (input.files && input.files[0]) {
                 const file = input.files[0];
 
-                // 处理图片：自动压缩
+                // 处理图片：打开裁剪器
                 if (file.type.startsWith('image/')) {
-                    compressImage(file, 1000, 0.7).then(base64 => {
-                        if (type === 'events') tempAppData.events[idx].gallery[0] = base64;
-                        else tempAppData.friends[idx].imgSrc = base64;
-                        renderEditorUI();
-                    });
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        openCropper(e.target.result, type, idx);
+                    }
+                    reader.readAsDataURL(file);
                 } else {
                     // 非图片（如视频）直接读取
                     const reader = new FileReader();
@@ -964,6 +1055,8 @@
                     reader.readAsDataURL(file);
                 }
             }
+            // 清空input，允许重复选择同一文件
+            input.value = '';
         }
 
         // --- 视觉特效 & 观察器 ---
