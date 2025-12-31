@@ -146,38 +146,67 @@
         .color-dot { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
         .color-dot.active { border-color: white; transform: scale(1.1); }
 
-        /* 公告弹窗样式 */
-        #announcement-modal {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 6000;
+        /* 公告与存储弹窗样式 */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10000;
             display: flex; align-items: center; justify-content: center; padding: 20px;
             transition: opacity 0.3s ease; opacity: 0; pointer-events: none;
         }
-        #announcement-modal.show { opacity: 1; pointer-events: auto; }
-        .ann-content {
+        .modal-overlay.show { opacity: 1; pointer-events: auto; }
+        .modal-box {
             background: linear-gradient(145deg, #1e1b4b, #0f172a);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 20px; max-width: 500px; width: 100%;
-            padding: 30px; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            padding: 24px; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
             transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            max-height: 80vh; display: flex; flex-direction: column;
         }
-        #announcement-modal.show .ann-content { transform: scale(1); }
+        .modal-overlay.show .modal-box { transform: scale(1); }
+        .storage-list { overflow-y: auto; margin-top: 10px; padding-right: 5px; flex: 1; }
+        .storage-item {
+            display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.05);
+            padding: 8px; border-radius: 8px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.05);
+        }
+        .storage-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; background: #000; }
+        .storage-info { flex: 1; min-width: 0; }
+        .storage-name { font-size: 0.8rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .storage-size { font-size: 0.7rem; color: #94a3b8; }
+        .storage-size.warn { color: #facc15; }
+        .storage-size.danger { color: #ef4444; }
     </style>
 </head>
 <body class="scroll-locked">
 
     <!-- 公告弹窗 -->
-    <div id="announcement-modal">
-        <div class="ann-content">
-            <button onclick="closeAnnouncement()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
-            <div class="text-center mb-6">
+    <div id="announcement-modal" class="modal-overlay">
+        <div class="modal-box">
+            <button onclick="closeModal('announcement-modal')" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+            <div class="text-center mb-6 shrink-0">
                 <div class="text-4xl mb-2">📢</div>
                 <h3 class="text-2xl font-bold font-art text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-purple-300" id="ann-title">更新公告</h3>
                 <p class="text-xs text-gray-500 mt-1" id="ann-date">DATE</p>
             </div>
-            <div class="text-gray-300 text-sm leading-relaxed space-y-2 font-body" id="ann-body">
-                <!-- 公告内容动态插入 -->
+            <div class="text-gray-300 text-sm leading-relaxed space-y-2 font-body overflow-y-auto" id="ann-body">
+                <!-- 公告内容 -->
             </div>
-            <button onclick="closeAnnouncement()" class="w-full mt-8 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-white transition border border-white/10">我知道了</button>
+            <button onclick="closeModal('announcement-modal')" class="w-full mt-6 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-white transition border border-white/10 shrink-0">我知道了</button>
+        </div>
+    </div>
+
+    <!-- 存储管理弹窗 -->
+    <div id="storage-modal" class="modal-overlay">
+        <div class="modal-box" style="max-width: 600px;">
+            <div class="flex justify-between items-center mb-4 shrink-0">
+                <h3 class="text-xl font-bold text-white"><i class="fas fa-database text-blue-400 mr-2"></i>存储占用概览</h3>
+                <button onclick="closeModal('storage-modal')" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="bg-blue-900/30 p-3 rounded-lg text-xs text-blue-200 mb-4 flex justify-between items-center shrink-0">
+                <span id="storage-total">计算中...</span>
+                <span class="text-gray-400">建议保持在 4MB 以下</span>
+            </div>
+            <div id="storage-list" class="storage-list custom-scrollbar">
+                <!-- 列表动态生成 -->
+            </div>
         </div>
     </div>
 
@@ -337,6 +366,44 @@
         // 临时变量，用于编辑态
         let tempAppData = null;
 
+        // --- 压缩工具函数 ---
+
+        // 压缩 File 对象或 Base64 字符串
+        function compressImage(source, maxWidth = 800, quality = 0.7) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let w = img.width;
+                    let h = img.height;
+
+                    // 等比缩放
+                    if (w > maxWidth) {
+                        h = Math.round(h * (maxWidth / w));
+                        w = maxWidth;
+                    }
+
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+
+                    // 导出为 JPEG，压缩质量
+                    const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    resolve(dataUrl);
+                };
+                img.onerror = reject;
+
+                if (source instanceof File) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => img.src = e.target.result;
+                    reader.readAsDataURL(source);
+                } else if (typeof source === 'string') {
+                    img.src = source;
+                }
+            });
+        }
+
         // --- 本地存储逻辑 ---
 
         function saveData() {
@@ -345,7 +412,7 @@
                 console.log('Data saved to localStorage');
             } catch (e) {
                 console.error('Failed to save data:', e);
-                alert('存储失败！您的内容可能过多或图片过大（Base64），已超过浏览器本地存储限制（通常为5-10MB）。\n\n建议：\n1. 使用下方的“导出备份”功能保存到电脑。\n2. 使用图片链接代替直接上传大图。');
+                alert('存储失败！您的内容可能过多或图片过大，已超过浏览器限制。请使用“存储管理”功能进行压缩。');
             }
         }
 
@@ -365,6 +432,120 @@
             if (confirm('确定要重置所有数据到默认状态吗？这将清空您编辑的所有内容！')) {
                 localStorage.removeItem(STORAGE_KEY);
                 location.reload();
+            }
+        }
+
+        // --- 存储管理逻辑 ---
+
+        function formatBytes(bytes, decimals = 2) {
+            if (!bytes || bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        // 估算字符串字节数
+        function getStringSize(str) {
+            return str ? new Blob([str]).size : 0;
+        }
+
+        function openStorageManager() {
+            const modal = document.getElementById('storage-modal');
+            const list = document.getElementById('storage-list');
+            const totalEl = document.getElementById('storage-total');
+            list.innerHTML = '';
+
+            // 收集所有图片数据
+            let images = [];
+
+            // 扫描 Events
+            tempAppData.events.forEach((evt, i) => {
+                if(evt.gallery && evt.gallery[0] && evt.gallery[0].startsWith('data:image')) {
+                    const size = getStringSize(evt.gallery[0]);
+                    images.push({
+                        type: 'events', index: i, name: `事件: ${evt.title || '未命名'}`,
+                        src: evt.gallery[0], size: size
+                    });
+                }
+            });
+
+            // 扫描 Friends
+            tempAppData.friends.forEach((f, i) => {
+                if(f.imgSrc && f.imgSrc.startsWith('data:image')) {
+                    const size = getStringSize(f.imgSrc);
+                    images.push({
+                        type: 'friends', index: i, name: `奖项: ${f.name || '未命名'}`,
+                        src: f.imgSrc, size: size
+                    });
+                }
+            });
+
+            // 按大小排序
+            images.sort((a, b) => b.size - a.size);
+
+            let totalSize = images.reduce((acc, curr) => acc + curr.size, 0);
+            totalEl.innerText = `当前图片占用: ${formatBytes(totalSize)}`;
+            if(totalSize > 4 * 1024 * 1024) totalEl.classList.add('text-red-400');
+
+            if(images.length === 0) {
+                list.innerHTML = '<div class="text-gray-500 text-center py-4">暂无本地存储的图片</div>';
+            } else {
+                images.forEach(img => {
+                    const sizeStr = formatBytes(img.size);
+                    const isBig = img.size > 500 * 1024; // > 500KB
+
+                    list.innerHTML += `
+                        <div class="storage-item">
+                            <img src="${img.src}" class="storage-thumb">
+                            <div class="storage-info">
+                                <div class="storage-name">${img.name}</div>
+                                <div class="storage-size ${isBig ? (img.size > 2*1024*1024 ? 'danger' : 'warn') : ''}">${sizeStr}</div>
+                            </div>
+                            <button onclick="compressItem('${img.type}', ${img.index}, ${img.size})" class="px-2 py-1 bg-blue-600 hover:bg-blue-500 rounded text-xs text-white">
+                                ⚡ 压缩
+                            </button>
+                        </div>
+                    `;
+                });
+            }
+
+            modal.classList.add('show');
+        }
+
+        async function compressItem(type, index, oldSize) {
+            const btn = event.target;
+            btn.innerText = '处理中...';
+            btn.disabled = true;
+
+            try {
+                let src = '';
+                if(type === 'events') src = tempAppData.events[index].gallery[0];
+                else src = tempAppData.friends[index].imgSrc;
+
+                // 执行压缩
+                const newBase64 = await compressImage(src, 800, 0.6);
+
+                // 更新数据
+                if(type === 'events') tempAppData.events[index].gallery[0] = newBase64;
+                else tempAppData.friends[index].imgSrc = newBase64;
+
+                const newSize = getStringSize(newBase64);
+                const saved = oldSize - newSize;
+                const savedPercent = Math.round((saved / oldSize) * 100);
+
+                if (saved > 0) {
+                    alert(`压缩成功！\n原大小: ${formatBytes(oldSize)}\n新大小: ${formatBytes(newSize)}\n节省了: ${savedPercent}%`);
+                    openStorageManager(); // 刷新列表
+                } else {
+                    alert('这张图片已经很小了，无法进一步压缩。');
+                    btn.innerText = '已最优';
+                }
+            } catch (err) {
+                console.error(err);
+                alert('压缩失败，请重试');
+                btn.innerText = '失败';
             }
         }
 
@@ -606,14 +787,19 @@
             const container = document.getElementById('editor-forms');
             container.innerHTML = '';
 
-             // 0. 数据管理区域 (新增)
+             // 0. 数据管理区域
             container.innerHTML += `
                 <div class="edit-section border-t-4 border-t-blue-500">
-                    <h4 class="text-lg font-bold mb-3 text-blue-300">💾 数据备份与恢复</h4>
-                    <p class="text-xs text-gray-400 mb-3">本地存储空间有限（约5MB），建议定期导出备份，或在不同设备间传输。</p>
-                    <div class="flex gap-3">
+                    <h4 class="text-lg font-bold mb-3 text-blue-300">💾 数据与存储</h4>
+                    <p class="text-xs text-gray-400 mb-3">管理本地数据，防止浏览器存储空间不足。</p>
+                    <div class="flex gap-2 mb-3">
+                        <button class="btn-tool" onclick="openStorageManager()">
+                            <i class="fas fa-hdd text-yellow-400"></i> 管理存储空间
+                        </button>
+                    </div>
+                    <div class="flex gap-2">
                         <button class="btn-tool" onclick="exportJSON()">
-                            <i class="fas fa-file-export text-blue-400"></i> 导出备份 (JSON)
+                            <i class="fas fa-file-export text-blue-400"></i> 导出备份
                         </button>
                         <button class="btn-tool" onclick="triggerImport()">
                             <i class="fas fa-file-import text-green-400"></i> 导入备份
@@ -758,16 +944,25 @@
 
         function handleFileSelect(input, type, idx) {
             if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    if (type === 'events') {
-                        tempAppData.events[idx].gallery[0] = e.target.result;
-                    } else {
-                        tempAppData.friends[idx].imgSrc = e.target.result;
+                const file = input.files[0];
+
+                // 处理图片：自动压缩
+                if (file.type.startsWith('image/')) {
+                    compressImage(file, 1000, 0.7).then(base64 => {
+                        if (type === 'events') tempAppData.events[idx].gallery[0] = base64;
+                        else tempAppData.friends[idx].imgSrc = base64;
+                        renderEditorUI();
+                    });
+                } else {
+                    // 非图片（如视频）直接读取
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        if (type === 'events') tempAppData.events[idx].gallery[0] = e.target.result;
+                        else tempAppData.friends[idx].imgSrc = e.target.result;
+                        renderEditorUI();
                     }
-                    renderEditorUI(); // 刷新显示状态
+                    reader.readAsDataURL(file);
                 }
-                reader.readAsDataURL(input.files[0]);
             }
         }
 
@@ -819,27 +1014,20 @@
                 })
                 .then(data => {
                     if (data && data.content) {
-                        // 简单去重：如果日期一样就不再弹（可选），这里演示每次刷新都检查
-                        // 实际可结合 localStorage 记录已读状态
                         document.getElementById('ann-title').innerText = data.title || "公告";
                         document.getElementById('ann-date').innerText = data.date || "";
                         const listHtml = Array.isArray(data.content)
                             ? data.content.map(line => `<p>• ${line}</p>`).join('')
                             : `<p>${data.content}</p>`;
                         document.getElementById('ann-body').innerHTML = listHtml;
-
-                        setTimeout(() => {
-                            document.getElementById('announcement-modal').classList.add('show');
-                        }, 1000); // 稍微延迟显示
+                        setTimeout(() => document.getElementById('announcement-modal').classList.add('show'), 1000);
                     }
                 })
-                .catch(() => {
-                    // 忽略错误（文件不存在等）
-                });
+                .catch(() => {});
         }
 
-        function closeAnnouncement() {
-            document.getElementById('announcement-modal').classList.remove('show');
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('show');
         }
 
         document.addEventListener('DOMContentLoaded', () => {
