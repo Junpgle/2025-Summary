@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>关于 - 2025 年度回顾生成器</title>
+    <title>使用指南 - 2025 年度回顾生成器</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Orbitron:wght@700&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -11,6 +11,7 @@
         body {
             background-color: #0f172a; color: white; font-family: 'Noto Sans SC', sans-serif;
             min-height: 100vh; display: flex; flex-direction: column;
+            overscroll-behavior: none;
         }
         .font-art { font-family: 'ZCOOL KuaiLe', cursive; }
         .font-digit { font-family: 'Orbitron', sans-serif; }
@@ -24,58 +25,191 @@
             border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 20px 50px rgba(0,0,0,0.3);
         }
         .neon-text { text-shadow: 0 0 10px rgba(250, 204, 21, 0.5); }
+
+        /* 简单的淡入动画 */
+        .animate-fade-in-up { animation: fadeInUp 0.8s ease-out; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .step-number {
+            width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #facc15, #f59e0b); color: black; font-weight: bold;
+            border-radius: 50%; font-family: 'Orbitron', sans-serif; margin-right: 12px; flex-shrink: 0;
+        }
+
+        /* 图片容器样式 */
+        .img-container {
+            overflow: hidden; border-radius: 12px; margin-top: 16px;
+            border: 1px solid rgba(255,255,255,0.1); position: relative;
+        }
+        .img-container img {
+            width: 100%; height: auto; object-fit: cover; transition: transform 0.5s ease;
+        }
+        .glass-card:hover .img-container img {
+            transform: scale(1.05);
+        }
     </style>
 </head>
-<body class="p-6">
+<body class="p-4 md:p-8">
 
     <div class="aurora-bg"></div>
 
-    <div class="max-w-2xl mx-auto w-full mt-10 mb-20 animate-fade-in-up">
+    <div class="max-w-3xl mx-auto w-full mb-20 animate-fade-in-up">
         <!-- 头部 -->
-        <header class="text-center mb-12">
-            <h1 class="text-4xl md:text-6xl font-digit text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500 mb-2">PROJECT 2025</h1>
-            <h2 class="text-xl md:text-2xl font-art text-gray-400">年度超绝活力回顾 · 生成器</h2>
+        <header class="text-center mb-12 mt-8">
+            <h1 class="text-5xl md:text-7xl font-digit text-transparent bg-clip-text bg-gradient-to-br from-yellow-300 via-pink-500 to-purple-500 mb-4 drop-shadow-lg">GUIDE 2025</h1>
+            <h2 class="text-2xl md:text-3xl font-art text-gray-200 tracking-widest neon-text">年度回顾 · 食用指南</h2>
+            <p class="text-gray-400 mt-4 text-sm md:text-base">打造专属于你的年度高光时刻 ✨</p>
         </header>
 
-        <!-- 内容卡片 -->
-        <div class="glass-card rounded-3xl p-8 md:p-12 space-y-8">
+        <!-- 核心介绍 -->
+        <div class="glass-card rounded-3xl p-8 md:p-10 mb-8 border-l-4 border-l-yellow-400">
+            <h3 class="text-2xl font-art text-yellow-300 mb-4 flex items-center"><i class="fas fa-meteor mr-3"></i>这是什么神器？</h3>
+            <p class="text-gray-300 leading-relaxed text-justify">
+                这是一个<strong>完全运行在浏览器端</strong>的静态网页生成器。简单来说，它就像一个超级酷炫的 PPT 制作工具，但生成的不是死板的幻灯片，而是一个带有<strong>视差滚动、烟花特效和动态交互</strong>的网页！
+                <br><br>
+                最棒的是：<span class="text-yellow-200 font-bold">它不需要联网保存！</span> 所有的照片、文字都只存在你的浏览器里，或者导出成文件保存在你自己的电脑上。绝对隐私，绝对安全。
+            </p>
+        </div>
 
-            <section>
-                <h3 class="text-xl font-bold text-yellow-300 mb-3"><i class="fas fa-rocket mr-2"></i>这是什么？</h3>
-                <p class="text-gray-300 leading-relaxed">
-                    这是一个完全运行在浏览器端的<strong>静态网页生成器</strong>。它不需要后台服务器，不上传你的隐私数据，所有的图片和文字都只保存在你的本地浏览器缓存（LocalStorage）中。
-                </p>
-            </section>
+        <!-- 详细教程 -->
+        <div class="space-y-8">
 
-            <section>
-                <h3 class="text-xl font-bold text-blue-300 mb-3"><i class="fas fa-magic mr-2"></i>它能做什么？</h3>
-                <ul class="list-disc list-inside text-gray-300 space-y-2 marker:text-blue-500">
-                    <li>生成炫酷的 2025 年度回忆时间轴。</li>
-                    <li>颁发有趣的年度奖项给你的朋友们。</li>
-                    <li>支持导出 JSON 数据备份，方便分享或迁移。</li>
-                    <li>支持将生成的网页直接截图或录屏分享。</li>
-                </ul>
-            </section>
+            <!-- 步骤 1 -->
+            <div class="glass-card rounded-2xl p-6 hover:bg-white/10 transition duration-300">
+                <div class="flex flex-col md:flex-row gap-6">
+                    <div class="flex-1">
+                        <div class="flex items-center mb-3">
+                            <div class="step-number">1</div>
+                            <h4 class="text-xl font-bold text-white">找到编辑入口</h4>
+                        </div>
+                        <p class="text-gray-400 text-sm leading-relaxed mb-4">
+                            进入主页后，视线看向<strong>右下角</strong>。你会发现一个悬浮的 <i class="fas fa-pen text-yellow-400"></i> <strong>圆形编辑按钮</strong>。
+                            <br><br>
+                            或者，当你浏览到某个具体页面时，点击右上角的“小铅笔”，可以直接跳转修改那一页的内容。
+                        </p>
+                    </div>
+                    <div class="w-full md:w-1/3 shrink-0">
+                        <div class="img-container h-40">
+                            <!-- 示意图：编辑界面 -->
+                            <img src="./src/edit.jpg" alt="Edit Interface">
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-            <section>
-                <h3 class="text-xl font-bold text-pink-300 mb-3"><i class="fas fa-code mr-2"></i>技术细节</h3>
-                <p class="text-gray-300 text-sm">
-                    构建于 HTML5, Tailwind CSS, Canvas Confetti 和 Cropper.js。<br>
-                    开源且免费，你可以随意修改代码部署属于你的版本。
-                </p>
-            </section>
+            <!-- 步骤 2 -->
+            <div class="glass-card rounded-2xl p-6 hover:bg-white/10 transition duration-300">
+                <div class="flex flex-col md:flex-row-reverse gap-6">
+                    <div class="flex-1">
+                        <div class="flex items-center mb-3">
+                            <div class="step-number">2</div>
+                            <h4 class="text-xl font-bold text-white">定制时间轴</h4>
+                        </div>
+                        <p class="text-gray-400 text-sm leading-relaxed mb-4">
+                            在左侧导航栏选择“时间轴”。你可以随意添加、删除或重新排序你的<strong>年度大事件</strong>。
+                            <ul class="mt-2 space-y-1 text-gray-500 list-disc list-inside text-xs">
+                                <li><strong>图片处理：</strong>支持上传照片，系统会自动裁剪压缩，不占内存。</li>
+                                <li><strong>视频支持：</strong>也可以粘贴视频链接，或者上传短视频转为封面图。</li>
+                                <li><strong>记录细节：</strong>写下日期、地点和当时的心情。</li>
+                            </ul>
+                        </p>
+                    </div>
+                    <div class="w-full md:w-1/3 shrink-0">
+                        <div class="img-container h-40">
+                            <!-- 示意图：时间轴 -->
+                            <img src="./src/time.jpg" alt="Timeline">
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-            <!-- 返回按钮 -->
-            <div class="pt-8 text-center border-t border-white/10">
-                <a href="./index.html" class="inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold rounded-full transition transform hover:scale-105 shadow-lg">
-                    <i class="fas fa-arrow-left mr-2"></i> 返回生成器
-                </a>
+            <!-- 步骤 3 -->
+            <div class="glass-card rounded-2xl p-6 hover:bg-white/10 transition duration-300">
+                <div class="flex flex-col md:flex-row gap-6">
+                    <div class="flex-1">
+                        <div class="flex items-center mb-3">
+                            <div class="step-number">3</div>
+                            <h4 class="text-xl font-bold text-white">颁发年度奖项 🏆</h4>
+                        </div>
+                        <p class="text-gray-400 text-sm leading-relaxed mb-4">
+                            这是最有趣的部分！给你自己或朋友颁发各种奇葩奖项。
+                            <br><br>
+                            比如“<strong>年度最佳熬夜选手</strong>”或者“<strong>最强干饭王</strong>”。
+                            别忘了点击 <span class="text-pink-400 font-bold"><i class="fas fa-palette"></i> 随机配色</span>，让每个奖项卡片都拥有独一无二的炫彩渐变！
+                        </p>
+                    </div>
+                    <div class="w-full md:w-1/3 shrink-0">
+                        <div class="img-container h-40">
+                            <!-- 示意图：奖杯 -->
+                            <img src="./src/reward.jpg" alt="Awards">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 步骤 4 -->
+            <div class="glass-card rounded-2xl p-6 hover:bg-white/10 transition duration-300">
+                <div class="flex flex-col md:flex-row-reverse gap-6">
+                    <div class="flex-1">
+                        <div class="flex items-center mb-3">
+                            <div class="step-number">4</div>
+                            <h4 class="text-xl font-bold text-white">保存与分享</h4>
+                        </div>
+                        <p class="text-gray-400 text-sm leading-relaxed mb-4">
+                            做好了怎么给别人看？
+                            <br><br>
+                            <span class="text-blue-400 font-bold">方法一（推荐）：</span> 使用 <i class="fas fa-file-export"></i> <strong>导出备份</strong> 功能，你会得到一个 <code>.json</code> 文件。发送给朋友，他们导入后即可查看完整动画效果！
+                            <br>
+                            <span class="text-green-400 font-bold">方法二：</span> 直接录屏或者截图长图分享到朋友圈。
+                        </p>
+                    </div>
+                    <div class="w-full md:w-1/3 shrink-0">
+                        <div class="img-container h-40">
+                            <!-- 示意图：连接/分享 -->
+                            <img src="./src/share.jpg" alt="Share">
+                        </div>
+                    </div>
+                </div>
             </div>
 
         </div>
 
-        <footer class="text-center text-gray-600 text-xs mt-12 font-mono">
-            DESIGNED WITH ❤️ FOR 2025
+        <!-- 功能亮点 -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12">
+            <div class="glass-card p-4 rounded-xl text-center">
+                <i class="fas fa-hdd text-3xl text-blue-400 mb-2"></i>
+                <div class="text-xs text-gray-400">本地自动保存</div>
+            </div>
+            <div class="glass-card p-4 rounded-xl text-center">
+                <i class="fas fa-compress-arrows-alt text-3xl text-green-400 mb-2"></i>
+                <div class="text-xs text-gray-400">图片智能压缩</div>
+            </div>
+            <div class="glass-card p-4 rounded-xl text-center">
+                <i class="fas fa-crop-alt text-3xl text-yellow-400 mb-2"></i>
+                <div class="text-xs text-gray-400">内置裁剪工具</div>
+            </div>
+            <div class="glass-card p-4 rounded-xl text-center">
+                <i class="fas fa-mobile-alt text-3xl text-purple-400 mb-2"></i>
+                <div class="text-xs text-gray-400">完美适配手机</div>
+            </div>
+        </div>
+
+        <!-- 返回按钮 -->
+        <div class="mt-16 text-center">
+            <a href="./index.html" class="group relative inline-flex items-center justify-center px-8 py-4 font-bold text-white transition-all duration-200 bg-yellow-500 font-lg rounded-full hover:bg-yellow-400 hover:shadow-[0_0_30px_rgba(250,204,21,0.6)]">
+                <span class="mr-2 group-hover:-translate-x-1 transition-transform"><i class="fas fa-rocket"></i></span>
+                开始我的创作
+                <div class="absolute -inset-3 rounded-full bg-yellow-400 opacity-20 group-hover:opacity-40 blur-lg transition-opacity duration-200"></div>
+            </a>
+            <p class="mt-4 text-xs text-gray-600">快去试试吧，别让 2025 悄悄溜走~</p>
+        </div>
+
+        <footer class="text-center text-gray-700 text-xs mt-16 pb-8 font-mono border-t border-white/5 pt-8">
+            <p>DESIGNED WITH ❤️ & CODE</p>
+            <p class="mt-1 opacity-50">2025 MEMORY GENERATOR PROJECT</p>
         </footer>
     </div>
 
