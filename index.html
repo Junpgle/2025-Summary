@@ -145,9 +145,41 @@
 
         .color-dot { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
         .color-dot.active { border-color: white; transform: scale(1.1); }
+
+        /* 公告弹窗样式 */
+        #announcement-modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 6000;
+            display: flex; align-items: center; justify-content: center; padding: 20px;
+            transition: opacity 0.3s ease; opacity: 0; pointer-events: none;
+        }
+        #announcement-modal.show { opacity: 1; pointer-events: auto; }
+        .ann-content {
+            background: linear-gradient(145deg, #1e1b4b, #0f172a);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px; max-width: 500px; width: 100%;
+            padding: 30px; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        #announcement-modal.show .ann-content { transform: scale(1); }
     </style>
 </head>
 <body class="scroll-locked">
+
+    <!-- 公告弹窗 -->
+    <div id="announcement-modal">
+        <div class="ann-content">
+            <button onclick="closeAnnouncement()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+            <div class="text-center mb-6">
+                <div class="text-4xl mb-2">📢</div>
+                <h3 class="text-2xl font-bold font-art text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-purple-300" id="ann-title">更新公告</h3>
+                <p class="text-xs text-gray-500 mt-1" id="ann-date">DATE</p>
+            </div>
+            <div class="text-gray-300 text-sm leading-relaxed space-y-2 font-body" id="ann-body">
+                <!-- 公告内容动态插入 -->
+            </div>
+            <button onclick="closeAnnouncement()" class="w-full mt-8 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-white transition border border-white/10">我知道了</button>
+        </div>
+    </div>
 
     <!-- 欢迎/开始页 -->
     <div id="welcome-screen">
@@ -778,9 +810,42 @@
         }
         function stopFireworks() { if (fwInterval) { clearInterval(fwInterval); fwInterval = null; } }
 
+        // --- 公告逻辑 ---
+        function checkAnnouncement() {
+            fetch('./announcement.json')
+                .then(response => {
+                    if (!response.ok) throw new Error("No announcement");
+                    return response.json();
+                })
+                .then(data => {
+                    if (data && data.content) {
+                        // 简单去重：如果日期一样就不再弹（可选），这里演示每次刷新都检查
+                        // 实际可结合 localStorage 记录已读状态
+                        document.getElementById('ann-title').innerText = data.title || "公告";
+                        document.getElementById('ann-date').innerText = data.date || "";
+                        const listHtml = Array.isArray(data.content)
+                            ? data.content.map(line => `<p>• ${line}</p>`).join('')
+                            : `<p>${data.content}</p>`;
+                        document.getElementById('ann-body').innerHTML = listHtml;
+
+                        setTimeout(() => {
+                            document.getElementById('announcement-modal').classList.add('show');
+                        }, 1000); // 稍微延迟显示
+                    }
+                })
+                .catch(() => {
+                    // 忽略错误（文件不存在等）
+                });
+        }
+
+        function closeAnnouncement() {
+            document.getElementById('announcement-modal').classList.remove('show');
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             loadData(); // 加载本地数据
             initConfetti();
+            checkAnnouncement(); // 检查公告
         });
     </script>
 </body>
