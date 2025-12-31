@@ -135,6 +135,14 @@
             border-radius: 6px; border: 1px dashed rgba(255,255,255,0.3);
             text-align: center; cursor: pointer; font-size: 0.9rem;
         }
+        .btn-tool {
+            background: rgba(30, 41, 59, 0.8); color: #cbd5e1; padding: 8px 12px;
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            font-size: 0.85rem; cursor: pointer; flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+            transition: all 0.2s;
+        }
+        .btn-tool:hover { background: rgba(255,255,255,0.1); color: white; border-color: rgba(255,255,255,0.3); }
+
         .color-dot { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
         .color-dot.active { border-color: white; transform: scale(1.1); }
     </style>
@@ -170,7 +178,7 @@
             <h3 class="text-xl font-art text-yellow-400">📝 内容编辑器</h3>
             <div class="flex gap-2">
                  <button onclick="resetData()" class="px-3 py-2 bg-red-900/50 text-red-300 border border-red-800 rounded-lg text-xs hover:bg-red-800 hover:text-white transition" title="清空本地缓存并恢复默认">
-                    <i class="fas fa-trash-alt mr-1"></i>重置
+                    <i class="fas fa-trash-alt mr-1"></i>
                 </button>
                 <button onclick="closeEditor()" class="px-4 py-2 bg-slate-700 rounded-lg text-sm hover:bg-slate-600">取消</button>
                 <button onclick="saveAndPreview()" class="px-4 py-2 bg-yellow-400 text-black font-bold rounded-lg text-sm hover:bg-yellow-300 shadow-[0_0_10px_#facc15]">保存并预览</button>
@@ -237,6 +245,9 @@
         </footer>
     </div>
 
+    <!-- 隐藏的导入文件输入框 -->
+    <input type="file" id="import-file-input" class="hidden" accept=".json" onchange="handleImportFile(this)">
+
     <script>
         // --- 核心数据 (State) ---
         const STORAGE_KEY = '2025_year_review_data_v1';
@@ -302,7 +313,7 @@
                 console.log('Data saved to localStorage');
             } catch (e) {
                 console.error('Failed to save data:', e);
-                alert('存储失败，可能是图片过大导致本地存储空间不足。建议使用图床链接代替Base64图片。');
+                alert('存储失败！您的内容可能过多或图片过大（Base64），已超过浏览器本地存储限制（通常为5-10MB）。\n\n建议：\n1. 使用下方的“导出备份”功能保存到电脑。\n2. 使用图片链接代替直接上传大图。');
             }
         }
 
@@ -323,6 +334,48 @@
                 localStorage.removeItem(STORAGE_KEY);
                 location.reload();
             }
+        }
+
+        // --- 导入导出逻辑 ---
+
+        function exportJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tempAppData));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", `YearReview_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchorNode); // required for firefox
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        function triggerImport() {
+            document.getElementById('import-file-input').click();
+        }
+
+        function handleImportFile(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const importedData = JSON.parse(e.target.result);
+                        // 简单校验数据结构
+                        if (importedData.config && importedData.events && importedData.friends) {
+                            if(confirm('解析成功！是否覆盖当前数据？(不可撤销)')) {
+                                tempAppData = importedData; // 更新编辑器临时数据
+                                renderEditorUI(); // 刷新编辑器界面
+                                alert('导入成功！记得点击右上角“保存并预览”生效。');
+                            }
+                        } else {
+                            alert('文件格式错误：缺少必要的数据字段。');
+                        }
+                    } catch (err) {
+                        alert('无法解析文件，请确保选择的是正确的 JSON 备份文件。');
+                        console.error(err);
+                    }
+                };
+                reader.readAsText(input.files[0]);
+            }
+            input.value = ''; // 清空，允许重复导入同一文件
         }
 
         // --- 应用逻辑 ---
@@ -520,6 +573,22 @@
         function renderEditorUI() {
             const container = document.getElementById('editor-forms');
             container.innerHTML = '';
+
+             // 0. 数据管理区域 (新增)
+            container.innerHTML += `
+                <div class="edit-section border-t-4 border-t-blue-500">
+                    <h4 class="text-lg font-bold mb-3 text-blue-300">💾 数据备份与恢复</h4>
+                    <p class="text-xs text-gray-400 mb-3">本地存储空间有限（约5MB），建议定期导出备份，或在不同设备间传输。</p>
+                    <div class="flex gap-3">
+                        <button class="btn-tool" onclick="exportJSON()">
+                            <i class="fas fa-file-export text-blue-400"></i> 导出备份 (JSON)
+                        </button>
+                        <button class="btn-tool" onclick="triggerImport()">
+                            <i class="fas fa-file-import text-green-400"></i> 导入备份
+                        </button>
+                    </div>
+                </div>
+            `;
 
             // 1. 全局配置
             container.innerHTML += `
